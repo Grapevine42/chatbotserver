@@ -71,7 +71,16 @@ app.get('/test', function (req, res) {
 // 파일 업로드
 
 app.post('/upload', upload.single('file'), function(req, res) {
-    res.send('upload complete');
+
+    var d = new Date();
+
+    var info = {
+        name : req.file.originalname,
+        path : req.file.path,
+        time : d
+    }
+
+    res.send(info);
 });
 
 
