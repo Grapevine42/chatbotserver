@@ -35,7 +35,23 @@ io.on('connection', function (socket) {
 
     console.log('a user connected : ' + user.socketId);
 
+    // 기본 메시지 물어보기, 챗봇이 시작 시 물어봅니다.
+    assistant.message({
+        workspace_id: process.env.workspace_id,
+        input: {
+            // 기본 묻는 문장에 대해 적어야 합니다.
+            'text': '무슨일이야'
+        }
+    }, function (err, res) {
+        if (err)
+            console.log('error:', err);
+        else {
+            socket.emit('message', res.output.text);
+        }
+    });
 
+
+    // 이후 메시지를 보내면 대답 ㅇㅇ
     socket.on('message', function (msg) {
         assistant.message({
             workspace_id: process.env.workspace_id,
@@ -46,11 +62,11 @@ io.on('connection', function (socket) {
             if (err)
                 console.log('error:', err);
             else {
-                console.log(res);
                 socket.emit('message', res.output.text);
             }
         });
     });
+
 
     socket.on('disconnect', function () {
         console.log('user disconnected');
