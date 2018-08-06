@@ -94,7 +94,7 @@ app.get('/test', function (req, res) {
 // 파일 업로드 후 cloudant 저장
 app.post('/upload', upload.single('file'), function(req, res) {
 
-    var d = new Date();
+    var d = new Date().toLocaleString();
 
     var info = {
         name : req.file.originalname,
