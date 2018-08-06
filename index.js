@@ -1,35 +1,78 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var watson = require('watson-developer-cloud');
+require('dotenv').config()
+
+// workspaceID -> view Detail
+var workspaceId = 'ac0bbfff-d50c-4d21-bdf1-d2fbdbc5aa92';
+
+var assistant = new watson.AssistantV1({
+    username: process.env.username,
+    password: process.env.password,
+    version: process.env.version
+});
 
 
-app.get('/', function(req, res){
+app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
-io.on('connection', function(socket){
+io.on('connection', function (socket) {
 
     var user = {
-        socketId : socket.conn.id,
-        socketData : socket.handshake.time
+        socketId: socket.conn.id,
+        socketData: socket.handshake.time
     };
 
-    console.log('a user connected : ' +user.socketId);
+    console.log('a user connected : ' + user.socketId);
 
 
-    socket.on('message', function(msg){
-        socket.emit('message', msg);
+    socket.on('message', function (msg) {
+        // socket.emit('message', msg);
+
+        console.log(typeof(msg) + 'asdfasdf');
+
         // 왓슨 연동 시켜주고요
-        console.log(msg);
+        assistant.message({
+            workspace_id: workspaceId,
+            input: {
+                'text': msg
+            }
+        }, function (err, res) {
+            if (err)
+                console.log('error:', err);
+            else {
+                console.log(res);
+                socket.emit('message', res.output.text);
+            }
+        });
     });
 
 
-    socket.on('disconnect', function(){
+    socket.on('disconnect', function () {
         console.log('user disconnected');
     });
 });
 
 
-http.listen(3000, function(){
+// 왓슨 연동 테스트
+
+app.get('/test', function (req, res) {
+    assistant.message({
+        workspace_id: workspaceId,
+        input: {'text': '123'}
+    }, function (err, response) {
+        if (err)
+            console.log('error:', err);
+        else {
+            console.log(JSON.stringify(response, null, 2));
+            res.send(response);
+        }
+    });
+});
+
+
+http.listen(3000, function () {
     console.log('listening on *:3000');
 });
