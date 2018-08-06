@@ -2,8 +2,11 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var watson = require('watson-developer-cloud');
-require('dotenv').config()
 
+var multer = require('multer');
+var upload = multer({dest: 'uploads/'});
+
+require('dotenv').config();
 
 
 var assistant = new watson.AssistantV1({
@@ -28,13 +31,8 @@ io.on('connection', function (socket) {
 
 
     socket.on('message', function (msg) {
-        // socket.emit('message', msg);
-
-        console.log(typeof(msg) + 'asdfasdf');
-
-        // 왓슨 연동 시켜주고요
         assistant.message({
-            workspace_id: process.env.workspaceId,
+            workspace_id: process.env.workspace_id,
             input: {
                 'text': msg
             }
@@ -48,7 +46,6 @@ io.on('connection', function (socket) {
         });
     });
 
-
     socket.on('disconnect', function () {
         console.log('user disconnected');
     });
@@ -59,16 +56,22 @@ io.on('connection', function (socket) {
 
 app.get('/test', function (req, res) {
     assistant.message({
-        workspace_id: process.env.workspaceId,
-        input: {'text': '123'}
-    }, function (err, response) {
+        workspace_id: process.env.workspace_id,
+        input: {'text': '아메리카노'}
+    },  function(err, response) {
         if (err)
             console.log('error:', err);
-        else {
+        else{
             console.log(JSON.stringify(response, null, 2));
             res.send(response);
         }
     });
+});
+
+// 파일 업로드
+
+app.post('/upload', upload.single('file'), function(req, res) {
+    res.send('upload complete');
 });
 
 
