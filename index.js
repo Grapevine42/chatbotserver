@@ -1,12 +1,18 @@
+require('dotenv').config();
+
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var watson = require('watson-developer-cloud');
 
+var parser = require('body-parser');
+
 var multer = require('multer');
 var upload = multer({dest: 'uploads/'});
 
-require('dotenv').config();
+var nano = require('nano')(process.env.DB_URL);
+
+app.use(parser.json());
 
 
 var assistant = new watson.AssistantV1({
@@ -78,9 +84,25 @@ app.post('/upload', upload.single('file'), function(req, res) {
         name : req.file.originalname,
         path : req.file.path,
         time : d
-    }
+    };
 
     res.send(info);
+});
+
+
+// cloudant 값 넣기
+app.post('/db/insert', function (req, res) {
+    var shelter = nano.use('shelter');
+    // DB_NAME 같은 경우는 대피소가 저장된 db, 사진 저장용 db 따로 해야해서 굳이 환경변수 필요없을듯?
+
+    shelter.insert(req.body, function (err, body) {
+        // value / key 값을 집어넣는다
+        if (err) {
+            console.log('에러');
+        }
+    });
+    res.send('insert complete');
+
 });
 
 
