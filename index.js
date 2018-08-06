@@ -4,8 +4,7 @@ var io = require('socket.io')(http);
 var watson = require('watson-developer-cloud');
 require('dotenv').config()
 
-// workspaceID -> view Detail
-var workspaceId = 'ac0bbfff-d50c-4d21-bdf1-d2fbdbc5aa92';
+
 
 var assistant = new watson.AssistantV1({
     username: process.env.username,
@@ -35,7 +34,7 @@ io.on('connection', function (socket) {
 
         // 왓슨 연동 시켜주고요
         assistant.message({
-            workspace_id: workspaceId,
+            workspace_id: process.env.workspaceId,
             input: {
                 'text': msg
             }
@@ -60,7 +59,7 @@ io.on('connection', function (socket) {
 
 app.get('/test', function (req, res) {
     assistant.message({
-        workspace_id: workspaceId,
+        workspace_id: process.env.workspaceId,
         input: {'text': '123'}
     }, function (err, response) {
         if (err)
