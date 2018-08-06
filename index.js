@@ -90,8 +90,8 @@ app.post('/upload', upload.single('file'), function(req, res) {
 });
 
 
-// cloudant 값 넣기
-app.post('/db/insert', function (req, res) {
+// cloudant 값 넣기 , 대피소
+app.post('/db/insert/shelter', function (req, res) {
     var shelter = nano.use('shelter');
     // DB_NAME 같은 경우는 대피소가 저장된 db, 사진 저장용 db 따로 해야해서 굳이 환경변수 필요없을듯?
 
@@ -101,9 +101,26 @@ app.post('/db/insert', function (req, res) {
             console.log('에러');
         }
     });
-    res.send('insert complete');
-
+    res.send('shelter insert complete');
 });
+
+
+// cloudant 값 넣기 , 사용자가 촬영한 사진?
+app.post('/db/insert/user', function (req, res) {
+    var user = nano.use('userimage');
+    // DB_NAME 같은 경우는 대피소가 저장된 db, 사진 저장용 db 따로 해야해서 굳이 환경변수 필요없을듯?
+
+    user.insert(req.body, function (err, body) {
+        // value / key 값을 집어넣는다
+        if (err) {
+            console.log('에러');
+        }
+    });
+    res.send('user image insert complete');
+});
+
+
+
 
 
 http.listen(3000, function () {
