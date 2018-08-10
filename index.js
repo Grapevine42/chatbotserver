@@ -4,16 +4,26 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var watson = require('watson-developer-cloud');
+var cors = require('cors');
+var multer = require('multer');
 
 var parser = require('body-parser');
 
-var multer = require('multer');
-var upload = multer({dest: 'uploads/'});
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './uploads')
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.fieldname + '-' + Date.now())
+    }
+})
+
+var upload = multer({storage : storage});
 
 var nano = require('nano')(process.env.DB_URL);
 
 app.use(parser.json());
-
+app.use(cors());
 
 var assistant = new watson.AssistantV1({
     username: process.env.username,
@@ -37,24 +47,9 @@ io.on('connection', function (socket) {
 
     console.log('a user connected : ' + user.socketId);
 
-    // 기본 메시지 물어보기, 챗봇이 시작 시 물어봅니다.
-    assistant.message({
-        workspace_id: process.env.workspace_id,
-        input: {
-            // 기본 묻는 문장에 대해 적어야 합니다.
-            'text': '무슨일이야'
-        }
-    }, function (err, res) {
-        if (err)
-            console.log('error:', err);
-        else {
-            socket.emit('message', res.output.text);
-        }
-    });
-
-
-    // 이후 메시지를 보내면 대답 ㅇㅇ
+    // 메시지 보내기
     socket.on('message', function (msg) {
+        console.log('메시지 정상 들어옴'+ ' : '+msg);
         assistant.message({
             workspace_id: process.env.workspace_id,
             input: {
@@ -65,6 +60,7 @@ io.on('connection', function (socket) {
                 console.log('error:', err);
             else {
                 socket.emit('message', res.output.text);
+                console.log(res.output.text);
             }
         });
     });
@@ -92,16 +88,13 @@ app.get('/test', function (req, res) {
 });
 
 // 파일 업로드 후 cloudant 저장
-app.post('/upload', upload.single('file'), function(req, res) {
-
+app.post('/userupload', upload.single('photo'), function(req, res) {
     var d = new Date().toLocaleString();
-
     var info = {
         name : req.file.originalname,
         path : req.file.path,
         time : d,
-        locationX : req.body.locationX,
-        locationY : req.body.locationY
+        location : req.body.location
     };
 
     var user = nano.use('userimage');
@@ -112,19 +105,19 @@ app.post('/upload', upload.single('file'), function(req, res) {
         if (err) {
             console.log('에러');
         }
+        else {
+            res.json(1);
+            console.log(info);
+        }
     });
-    res.send('user image insert complete');
+    console.log('파일저장');
 });
 
 
-// cloudant 값 넣기 , 대피소
-app.post('/db/insert/shelter', function (req, res) {
+// cloudant 에 대피소 정보 넣
+app.post('/inputshel', function (req, res) {
     var shelter = nano.use('shelter');
     // DB_NAME 같은 경우는 대피소가 저장된 db, 사진 저장용 db 따로 해야해서 굳이 환경변수 필요없을듯?
-
-    var info = {
-
-    }
 
     shelter.insert(req.body, function (err, body) {
         // value / key 값을 집어넣는다
@@ -134,7 +127,6 @@ app.post('/db/insert/shelter', function (req, res) {
     });
     res.send('shelter insert complete');
 });
-
 
 
 //  이미지 디비 넣기 테스트, 이미지는 로컬에 저장
@@ -153,9 +145,6 @@ app.post('/db/insert/shelter', function (req, res) {
 // });
 
 
-
-
-
-http.listen(3000, function () {
-    console.log('listening on *:3000');
+http.listen(8080, function () {
+    console.log('listening on *:8080');
 });
