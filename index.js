@@ -128,6 +128,22 @@ app.post('/inputshel', function (req, res) {
     res.send('shelter insert complete');
 });
 
+app.get('/listshel', function (req, res) {
+    var shelter = nano.use('shelter');
+    shelter.list({include_docs:true}, function (err, body) {
+        body.rows.forEach((db)=>
+        console.log(db.doc));
+    });
+});
+
+app.get('/listphoto', function (req, res) {
+    var userphoto = nano.use('userimage');
+    userphoto.list({include_docs:true}, function (err, body) {
+        body.rows.forEach((db)=>
+            console.log(db.doc));
+    });
+});
+
 
 //  이미지 디비 넣기 테스트, 이미지는 로컬에 저장
 // // cloudant 값 넣기 , 사용자가 촬영한 사진?
@@ -145,6 +161,6 @@ app.post('/inputshel', function (req, res) {
 // });
 
 
-http.listen(8080, function () {
+http.listen(8081, function () {
     console.log('listening on *:8080');
 });
