@@ -1,11 +1,14 @@
 require('dotenv').config();
 
+
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var watson = require('watson-developer-cloud');
 var cors = require('cors');
 var multer = require('multer');
+var distance = require('gps-distance');
+
 
 var parser = require('body-parser');
 
@@ -24,6 +27,7 @@ var nano = require('nano')(process.env.DB_URL);
 
 app.use(parser.json());
 app.use(cors());
+
 
 var assistant = new watson.AssistantV1({
     username: process.env.username,
@@ -128,21 +132,82 @@ app.post('/inputshel', function (req, res) {
     res.send('shelter insert complete');
 });
 
+// 대피소 리스트로 뿌려서 테스트, 좌표 임의값
 app.get('/listshel', function (req, res) {
     var shelter = nano.use('shelter');
     shelter.list({include_docs:true}, function (err, body) {
-        body.rows.forEach((db)=>
-        console.log(db.doc));
+        var dataArr = [];
+        body.rows.forEach(function (db) {
+            var data = {
+                name:db.doc.name,
+                x:db.doc.x,
+                y:db.doc.y,
+                differ:distance(37.528292, 127.117533, db.doc.x, db.doc.y)
+            };
+            dataArr.push(data);
+        });
+        console.log(dataArr);
+
+        var maxNum, num;
+
+        for(var i=0;i<dataArr.length;i++){
+            if(!maxNum){
+                maxNum = dataArr[i].differ;
+                num = i;
+            }
+            if(maxNum>dataArr[i].differ){
+                maxNum = dataArr[i];
+                num = i;
+            }
+        }
+        res.send(dataArr[num]);
     });
 });
 
-app.get('/listphoto', function (req, res) {
-    var userphoto = nano.use('userimage');
-    userphoto.list({include_docs:true}, function (err, body) {
-        body.rows.forEach((db)=>
-            console.log(db.doc));
+// 좌표값 넘겨주면 가까운 대피소 표시
+app.post('/closeshel', function (req, res) {
+    var shelter = nano.use('shelter');
+    shelter.list({include_docs:true}, function (err, body) {
+        var dataArr = [];
+        body.rows.forEach(function (db) {
+            var data = {
+                name:db.doc.name,
+                x:db.doc.x,
+                y:db.doc.y,
+                differ:distance(req.body.x, req.body.y, db.doc.x, db.doc.y)
+            };
+            dataArr.push(data);
+        });
+        console.log(dataArr);
+
+        var maxNum, num;
+
+        for(var i=0;i<dataArr.length;i++){
+            if(!maxNum){
+                maxNum = dataArr[i].differ;
+                num = i;
+            }
+            if(maxNum>dataArr[i].differ){
+                maxNum = dataArr[i];
+                num = i;
+            }
+        }
+        res.send(dataArr[num]);
     });
 });
+
+// 유저이미지 JSON 리스트로 뿌려줍니다
+app.get('/listphoto', function (req, res) {
+    var userphoto = nano.use('userimage');
+    var dataArr = [];
+    userphoto.list({include_docs:true}, function (err, body) {
+        body.rows.forEach((db)=>
+            dataArr.push(db.doc));
+        res.send(dataArr);
+    });
+});
+
+
 
 
 //  이미지 디비 넣기 테스트, 이미지는 로컬에 저장
@@ -161,6 +226,6 @@ app.get('/listphoto', function (req, res) {
 // });
 
 
-http.listen(8081, function () {
+http.listen(8080, function () {
     console.log('listening on *:8080');
 });
