@@ -62,8 +62,9 @@ io.on('connection', function (socket) {
             if (err)
                 console.log('error:', err);
             else {
-                socket.emit('message', res.output.text);
-                console.log(res.output.text);
+                socket.emit('message', res);
+                // console.log(res.output.text);
+                console.log(res);
             }
         });
     });
@@ -128,7 +129,7 @@ app.post('/inputshel', function (req, res) {
             console.log('에러');
         }
     });
-    res.send('shelter insert complete');
+    res.send(req.body);
 });
 
 // 대피소 리스트로 뿌려서 테스트, 좌표 임의값
@@ -210,7 +211,6 @@ app.get('/listphoto', function (req, res) {
 
 
 // id detail
-
 app.get('/detail/:id', function (req, res) {
     console.log(req.params);
     var userphoto = nano.use('userimage');
@@ -218,6 +218,29 @@ app.get('/detail/:id', function (req, res) {
     userphoto.get(req.params.id, function (err, body) {
         res.send(body);
     });
+});
+
+// 특정거리내 대피소 여러개 표시
+app.post('/closeshellist', function (req, res) {
+    var shelter = nano.use('shelter');
+    shelter.list({include_docs:true}, function (err, body) {
+        var dataArr = [];
+        body.rows.forEach(function (db) {
+            var data = {
+                name:db.doc.name,
+                x:db.doc.x,
+                y:db.doc.y,
+                differ:distance(req.body.x, req.body.y, db.doc.x, db.doc.y)
+            };
+            if(data.differ<10){
+                dataArr.push(data);
+            }
+        });
+        console.log(dataArr);
+
+        res.send(dataArr);
+    });
+    // console.log(req.body)
 });
 
 
