@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
@@ -194,6 +193,7 @@ app.post('/closeshel', function (req, res) {
         }
         res.send(dataArr[num]);
     });
+   // console.log(req.body)
 });
 
 // 유저이미지 JSON 리스트로 뿌려줍니다
@@ -207,6 +207,18 @@ app.get('/listphoto', function (req, res) {
     });
 });
 
+
+
+// id detail
+
+app.get('/detail/:id', function (req, res) {
+    console.log(req.params);
+    var userphoto = nano.use('userimage');
+
+    userphoto.get(req.params.id, function (err, body) {
+        res.send(body);
+    });
+});
 
 
 
