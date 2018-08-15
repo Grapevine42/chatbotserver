@@ -7,7 +7,9 @@ var watson = require('watson-developer-cloud');
 var cors = require('cors');
 var multer = require('multer');
 var distance = require('gps-distance');
+var fs = require('fs');
 
+var userList = [];
 
 var parser = require('body-parser');
 
@@ -40,6 +42,14 @@ app.get('/', function (req, res) {
 });
 
 
+//
+// router.get('/:id/download', function (req, res, next) {
+//     var filePath = "/my/file/path/..."; // Or format the path using the `id` rest param
+//     var fileName = "report.pdf"; // The default name the browser will use
+//
+//     res.download(filePath, fileName);
+// });
+
 // 소켓io
 io.on('connection', function (socket) {
 
@@ -50,9 +60,25 @@ io.on('connection', function (socket) {
 
     console.log('a user connected : ' + user.socketId);
 
+    socket.on("enter", function(msg){
+        var userInfo = {
+            socketId : socket.conn.id,
+            name : msg.name,
+            blood : msg.blood,
+            age : msg.age,
+            gender : msg.gender,
+            lat : msg.lat,
+            long : msg.long
+        };
+
+        userList.push(userInfo);
+     //   console.log("userList", userList);
+    })
+
+
     // 메시지 보내기
     socket.on('message', function (msg) {
-        console.log('메시지 정상 들어옴'+ ' : '+msg);
+       // console.log('메시지 정상 들어옴'+ ' : '+msg);
         assistant.message({
             workspace_id: process.env.workspace_id,
             input: {
@@ -62,15 +88,51 @@ io.on('connection', function (socket) {
             if (err)
                 console.log('error:', err);
             else {
-                socket.emit('message', res);
-                // console.log(res.output.text);
-                console.log(res);
+                var msgType = 0;
+
+
+                if(msg == "hello"){
+                    msgType = "map";
+                }
+                else if (msg == "1"){
+                    msgType = "image"
+                }
+                // else if (res.output.generic[1].options){
+                //     msgType = "option";
+                //     var optionList = [];
+                //     for(var i=0;i<res.output.generic[1].options.length;i++){
+                //         optionList.push(res.output.generic[1].options[i].value.input.text);
+                //     }
+                //    // console.log(optionList);
+                //    //  res = optionList;
+                // }
+
+
+                var responseObj = {
+                    type : msgType,
+                    data : res
+                };
+
+                console.log(responseObj.data.output);
+                console.log(responseObj.data.intents);
+
+                socket.emit('message', responseObj);
+
+                //console.log(res.output.text);
+
+                //console.log(res.output.generic[1].options);
+                //console.log(res.output.generic[1].options[0].value);
+
             }
         });
     });
 
     socket.on('disconnect', function () {
-        console.log('user disconnected');
+        // for(var i=0;i<userList.length;i++){
+        //     if(socket.conn.id == userList[i].socketId){
+        //         userList[i].pop();
+        //     }
+        // }
     });
 });
 
@@ -91,8 +153,12 @@ app.get('/test', function (req, res) {
     });
 });
 
+app.get("/users", function (req, res) {
+    res.json(userList);
+})
+
 // 파일 업로드 후 cloudant 저장
-app.post('/userupload', upload.single('photo'), function(req, res) {
+app.post('/userUpload', upload.single('photo'), function(req, res) {
     var d = new Date().toLocaleString();
     var info = {
         name : req.file.originalname,
@@ -117,9 +183,23 @@ app.post('/userupload', upload.single('photo'), function(req, res) {
     console.log('파일저장');
 });
 
+// 파일 다운로드
+app.get('/uploads/:name', function (req, res) {
+    var filePath = '/uploads/';
+    // console.log(req.params.name);
+    var fileName = req.params.name;
+    //
+    // fs.readFile(filePath+fileName, function (err, data) {
+    //     res.writeHead(200, {'Content-Type' : 'text/html'});
+    //     res.end(data);
+    // });
+    var file = __dirname + filePath + fileName;
+    res.download(file);
+});
+
 
 // cloudant 에 대피소 정보 넣
-app.post('/inputshel', function (req, res) {
+app.post('/inputShel', function (req, res) {
     var shelter = nano.use('shelter');
     // DB_NAME 같은 경우는 대피소가 저장된 db, 사진 저장용 db 따로 해야해서 굳이 환경변수 필요없을듯?
 
@@ -133,7 +213,7 @@ app.post('/inputshel', function (req, res) {
 });
 
 // 대피소 리스트로 뿌려서 테스트, 좌표 임의값
-app.get('/listshel', function (req, res) {
+app.get('/listShel', function (req, res) {
     var shelter = nano.use('shelter');
     shelter.list({include_docs:true}, function (err, body) {
         var dataArr = [];
@@ -165,7 +245,7 @@ app.get('/listshel', function (req, res) {
 });
 
 // 좌표값 넘겨주면 가까운 대피소 표시
-app.post('/closeshel', function (req, res) {
+app.post('/closeShel', function (req, res) {
     var shelter = nano.use('shelter');
     shelter.list({include_docs:true}, function (err, body) {
         var dataArr = [];
@@ -198,7 +278,7 @@ app.post('/closeshel', function (req, res) {
 });
 
 // 유저이미지 JSON 리스트로 뿌려줍니다
-app.get('/listphoto', function (req, res) {
+app.get('/listPhoto', function (req, res) {
     var userphoto = nano.use('userimage');
     var dataArr = [];
     userphoto.list({include_docs:true}, function (err, body) {
@@ -221,7 +301,7 @@ app.get('/detail/:id', function (req, res) {
 });
 
 // 특정거리내 대피소 여러개 표시
-app.post('/closeshellist', function (req, res) {
+app.post('/closeShelList', function (req, res) {
     var shelter = nano.use('shelter');
     shelter.list({include_docs:true}, function (err, body) {
         var dataArr = [];
