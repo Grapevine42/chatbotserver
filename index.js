@@ -7,7 +7,7 @@ var watson = require('watson-developer-cloud');
 var cors = require('cors');
 var multer = require('multer');
 var distance = require('gps-distance');
-var fs = require('fs');
+
 
 var userList = [];
 
@@ -42,13 +42,6 @@ app.get('/', function (req, res) {
 });
 
 
-//
-// router.get('/:id/download', function (req, res, next) {
-//     var filePath = "/my/file/path/..."; // Or format the path using the `id` rest param
-//     var fileName = "report.pdf"; // The default name the browser will use
-//
-//     res.download(filePath, fileName);
-// });
 
 // 소켓io
 io.on('connection', function (socket) {
