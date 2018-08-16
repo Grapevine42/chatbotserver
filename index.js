@@ -93,38 +93,40 @@ io.on('connection', function (socket) {
 
     // 메시지 보내기
     socket.on('message', function (msg) {
-       // console.log('메시지 정상 들어옴'+ ' : '+msg);
+        console.log('메시지 정상 들어옴'+ ' : '+msg);
         assistant.message({
             workspace_id: process.env.workspace_id,
             input: {
                 'text': msg
             }
-        }, function (err, res) {
+        },
+            function (err, res) {
             if (err)
                 console.log('error:', err);
             else {
+                console.log(res);
+                console.log("resoutput : ",res.output);
                 var msgType = 0;
-
-
                 if(msg == "hello"){
                     msgType = "map";
                 }
+
                 else if (msg == "1"){
                     msgType = "image"
                 }
-                // else if (res.output.generic[1].options){
-                //     msgType = "option";
-                //     var optionList = [];
-                //     for(var i=0;i<res.output.generic[1].options.length;i++){
-                //         optionList.push(res.output.generic[1].options[i].value.input.text);
-                //     }
-                //    // console.log(optionList);
-                //    //  res = optionList;
-                // }
 
+                else if (res.output.generic[0].options){
+                    msgType = "option";
+                    var optionList = [];
+                    for(var i=0;i<res.output.generic[0].options.length;i++){
+                        optionList.push(res.output.generic[0].options[i].value.input.text);
+                    }
+                }
 
                 var responseObj = {
                     type : msgType,
+                    intents : res.intents,
+                    option : optionList,
                     data : res
                 };
 
@@ -169,6 +171,7 @@ app.get('/test', function (req, res) {
 });
 
 app.get("/users", function (req, res) {
+    console.log(userList);
     res.json(userList);
 })
 
