@@ -103,41 +103,79 @@ io.on('connection', function (socket) {
             if (err)
                 console.log('error:', err);
             else {
-                var msgType = 0;
-
-
-                if(msg == "hello"){
-                    msgType = "map";
-                }
-                else if (msg == "1"){
-                    msgType = "image"
-                }
-                // else if (res.output.generic[1].options){
-                //     msgType = "option";
-                //     var optionList = [];
-                //     for(var i=0;i<res.output.generic[1].options.length;i++){
-                //         optionList.push(res.output.generic[1].options[i].value.input.text);
-                //     }
-                //    // console.log(optionList);
-                //    //  res = optionList;
+                // var msgType = 0;
+                //
+                // if(msg == "hello"){
+                //     msgType = "map";
                 // }
-
-
+                // else if (msg == "1"){
+                //     msgType = "image"
+                // }
+                // else if (res.output.generic[1].options){
+                //     // console.log(res.output);
+                //     // msgType = "option";
+                //     // var optionList = [];
+                //     // for(var i=0;i<res.output.generic[1].options.length;i++){
+                //     //     optionList.push(res.output.generic[1].options[i].value.input.text);
+                //     // }
+                //
+                //
+                //
+                // }
+                // else{
+                //     msgType = 'txt';
+                //     console.log('123');
+                // }
+                //
+                //
                 var responseObj = {
                     type : msgType,
                     data : res
                 };
+                //
+                // console.log(responseObj.data.output);
+                // console.log(responseObj.data.intents);
+                //
 
-                console.log(responseObj.data.output);
-                console.log(responseObj.data.intents);
-
-                socket.emit('message', responseObj);
 
                 //console.log(res.output.text);
 
                 //console.log(res.output.generic[1].options);
                 //console.log(res.output.generic[1].options[0].value);
 
+
+                var msgType = 0;
+
+                var generic = res.output.generic;
+                for(var i=0;i<generic.length;i++){
+                    if(generic[i].response_type == 'text'){
+                        console.log(generic[i].text);
+                    } else if(generic[i].response_type == 'option'){
+
+                        responseObj.type='option';
+
+                        var optionList = [];
+
+                        for(var n = 0;n<generic[i].options.length;n++) {
+                            var option = {
+                                label: generic[i].options[n].label,
+                                value: generic[i].options[n].value.input.text
+                            }
+                            optionList.push(option);
+                        }
+
+                        responseObj = {
+                            type : 'option',
+                            data : res,
+                            option : optionList
+                        }
+
+                        // console.log(optionList); 옵션 리스트로 저장
+                    }
+                }
+
+                console.log(responseObj);
+                socket.emit('message', responseObj);
             }
         });
     });
@@ -175,7 +213,7 @@ app.get("/users", function (req, res) {
 
 
 
-// 파일 업로드 후 cloudant 저장 + 경로 추가
+// 파일 업로드 후 cloudant 저장
 app.post('/upload/:type', upload.single('photo'), function(req, res) {
     var d = new Date().toLocaleString();
     var info = {
