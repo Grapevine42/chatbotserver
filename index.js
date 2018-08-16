@@ -252,6 +252,41 @@ app.get('/uploads/user/:name', function (req, res) {
 });
 
 
+app.get('/uploads/handleList/:name', function (req, res) {
+    var filePath = '/uploads/handleList';
+    // console.log(req.params.name);
+    var fileName = req.params.name;
+    //
+    var file = __dirname + filePath + '/'+fileName;
+    res.download(file);
+});
+
+app.get('/handleList', function (req, res) {
+    var infoList = [];
+
+    var info1 = {
+        type : 'imageList',
+        title : '1.png',
+        path : '/uploads/handleList'
+    };
+    var info2 = {
+        type : 'imageList',
+        title : '2.png',
+        path : '/uploads/handleList'
+    };
+    var info3 = {
+        type : 'imageList',
+        title : '3.png',
+        path : '/uploads/handleList'
+    };
+
+    infoList.push(info1);
+    infoList.push(info2);
+    infoList.push(info3);
+
+    res.send(infoList);
+});
+
 // cloudant 에 대피소 정보 넣
 app.post('/inputShel', function (req, res) {
     var shelter = nano.use('shelter');
