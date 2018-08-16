@@ -8,11 +8,9 @@ var cors = require('cors');
 var multer = require('multer');
 var distance = require('gps-distance');
 
-
 var userList = [];
 
 var parser = require('body-parser');
-
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, './uploads')
@@ -21,10 +19,12 @@ var storage = multer.diskStorage({
         cb(null, file.fieldname + '-' + Date.now())
     }
 })
+console.log(process.env.DB_URL);
 
 var upload = multer({storage : storage});
-
 var nano = require('nano')(process.env.DB_URL);
+
+
 
 app.use(parser.json());
 app.use(cors());
@@ -273,10 +273,12 @@ app.post('/closeShel', function (req, res) {
 // 유저이미지 JSON 리스트로 뿌려줍니다
 app.get('/listPhoto', function (req, res) {
     var userphoto = nano.use('userimage');
+
     var dataArr = [];
     userphoto.list({include_docs:true}, function (err, body) {
         body.rows.forEach((db)=>
             dataArr.push(db.doc));
+        console.log(dataArr);
         res.send(dataArr);
     });
 });
