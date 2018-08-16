@@ -7,24 +7,46 @@ var watson = require('watson-developer-cloud');
 var cors = require('cors');
 var multer = require('multer');
 var distance = require('gps-distance');
+var fs = require('fs-extra');
+
 
 var userList = [];
 
 var parser = require('body-parser');
-var storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, './uploads')
-    },
-    filename: function (req, file, cb) {
-        cb(null, file.fieldname + '-' + Date.now())
-    }
-})
-console.log(process.env.DB_URL);
 
-var upload = multer({storage : storage});
+// var storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         cb(null, './uploads')
+//     },
+//     filename: function (req, file, cb) {
+//         cb(null, file.fieldname + '-' + Date.now())
+//     }
+// })
+//
+// var upload = multer({storage : storage});
+// test
+
+let upload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, callback) => {
+            let type = req.params.type;
+            let path = `./uploads/${type}`;
+            fs.mkdirsSync(path);
+            callback(null, path);
+        },
+        filename: (req, file, callback) => {
+            //originalname is the uploaded file's name with extn
+            callback(null, file.originalname);
+        }
+    })
+});
+
+// app.post('/api/:type', upload.single('file'), (req, res) => {
+//     res.status(200).send();
+// });
+
+
 var nano = require('nano')(process.env.DB_URL);
-
-
 
 app.use(parser.json());
 app.use(cors());
@@ -150,14 +172,19 @@ app.get("/users", function (req, res) {
     res.json(userList);
 })
 
-// 파일 업로드 후 cloudant 저장
-app.post('/userUpload', upload.single('photo'), function(req, res) {
+
+
+
+// 파일 업로드 후 cloudant 저장 + 경로 추가
+app.post('/upload/:type', upload.single('photo'), function(req, res) {
     var d = new Date().toLocaleString();
     var info = {
         name : req.file.originalname,
         path : req.file.path,
         time : d,
-        location : req.body.location
+        locationName : req.body.locationName,
+        lat : req.body.lat,
+        long : req.body.long
     };
 
     var user = nano.use('userimage');
@@ -177,16 +204,12 @@ app.post('/userUpload', upload.single('photo'), function(req, res) {
 });
 
 // 파일 다운로드
-app.get('/uploads/:name', function (req, res) {
-    var filePath = '/uploads/';
+app.get('/uploads/user/:name', function (req, res) {
+    var filePath = '/uploads/user';
     // console.log(req.params.name);
     var fileName = req.params.name;
     //
-    // fs.readFile(filePath+fileName, function (err, data) {
-    //     res.writeHead(200, {'Content-Type' : 'text/html'});
-    //     res.end(data);
-    // });
-    var file = __dirname + filePath + fileName;
+    var file = __dirname + filePath + '/'+fileName;
     res.download(file);
 });
 
@@ -273,12 +296,10 @@ app.post('/closeShel', function (req, res) {
 // 유저이미지 JSON 리스트로 뿌려줍니다
 app.get('/listPhoto', function (req, res) {
     var userphoto = nano.use('userimage');
-
     var dataArr = [];
     userphoto.list({include_docs:true}, function (err, body) {
         body.rows.forEach((db)=>
             dataArr.push(db.doc));
-        console.log(dataArr);
         res.send(dataArr);
     });
 });
