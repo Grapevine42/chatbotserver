@@ -93,7 +93,7 @@ io.on('connection', function (socket) {
 
     // 메시지 보내기
     socket.on('message', function (msg) {
-       // console.log('메시지 정상 들어옴'+ ' : '+msg);
+        console.log('메시지 정상 들어옴'+ ' : '+msg);
         assistant.message({
             workspace_id: process.env.workspace_id,
             input: {
@@ -172,10 +172,33 @@ io.on('connection', function (socket) {
                             type : 'option',
                             data : res,
                             option : optionList
+                        };
+
+                        console.log(optionList);
+
+                        var resTxt = responseObj.data.output.text;
+                        if(resTxt.toString().includes('Advisory')){
+
+
+                            responseObj = {
+                                data : res,
+                                option : optionList,
+                                type : 'disasterPreview',
+                                status : 'advisory',
+                                location : '36b/3a, Ulica Saperska, Pozan, Polska'
+                            };
+
+
+                            socket.emit('message', responseObj);
+
+                            responseObj.type = 'option'
                         }
 
                     }
                 }
+
+
+                console.log(responseObj.data);
 
                 socket.emit('message', responseObj);
             }
@@ -197,15 +220,28 @@ io.on('connection', function (socket) {
 // 왓슨 연동 테스트
 
 app.get('/test', function (req, res) {
-    assistant.message({
-        workspace_id: process.env.workspace_id,
-        input: {'text': '아메리카노'}
-    },  function(err, response) {
-        if (err)
-            console.log('error:', err);
-        else{
+    // assistant.message({
+    //     workspace_id: process.env.workspace_id,
+    //     input: {'text': '아메리카노'}
+    // },  function(err, response) {
+    //     if (err)
+    //         console.log('error:', err);
+    //     else{
+    //         console.log(JSON.stringify(response, null, 2));
+    //         res.send(response);
+    //     }
+    // });
+
+    var params = {
+        workspace_id : process.env.workspace_id
+    }
+
+    assistant.listDialogNodes(params, function(err, response) {
+        if (err) {
+            console.error(err);
+        } else {
             console.log(JSON.stringify(response, null, 2));
-            res.send(response);
+            res.send(JSON.stringify(response, null, 2));
         }
     });
 });
@@ -445,16 +481,16 @@ app.get('/newsPreview', function (req, res) {
 
 
 
-
-app.get('/disasterPreview', function (req, res) {
-    var newsPreviewList = {
-        type : 'disasterPreview',
-        status : 'safe',
-        location : '36b/3a, Ulica Saperska, Pozan, Polska'
-    };
-
-    res.send(newsPreviewList);
-});
+//
+// app.get('/disasterPreview', function (req, res) {
+//     var newsPreviewList = {
+//         type : 'disasterPreview',
+//         status : 'safe',
+//         location : '36b/3a, Ulica Saperska, Pozan, Polska'
+//     };
+//
+//     res.send(newsPreviewList);
+// });
 
 
 
