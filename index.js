@@ -8,7 +8,7 @@ var cors = require('cors');
 var multer = require('multer');
 var distance = require('gps-distance');
 var fs = require('fs-extra');
-
+var context;
 
 var userList = [];
 
@@ -87,7 +87,7 @@ io.on('connection', function (socket) {
         };
 
         userList.push(userInfo);
-     //   console.log("userList", userList);
+        //   console.log("userList", userList);
     })
 
 
@@ -96,6 +96,7 @@ io.on('connection', function (socket) {
         console.log('메시지 정상 들어옴'+ ' : '+msg);
         assistant.message({
             workspace_id: process.env.workspace_id,
+            context : context,
             input: {
                 'text': msg
             }
@@ -142,10 +143,8 @@ io.on('connection', function (socket) {
 
                 //console.log(res.output.generic[1].options);
                 //console.log(res.output.generic[1].options[0].value);
-
-
                 var msgType = 0;
-
+                context = res.context;
                 var generic = res.output.generic;
                 for(var i=0;i<generic.length;i++){
                     if(generic[i].response_type == 'text'){
@@ -194,12 +193,46 @@ io.on('connection', function (socket) {
                             responseObj.type = 'option'
                         }
 
+                        if(resTxt.toString().includes('main articles')){
+
+                            var newsList = [];
+
+                            var info1 = {
+                                type : 'newsPreview',
+                                title : 'Earthquake: 4.4 quake strikes Inland',
+                                content : 'This information comes from the USGS Earthquake Notification Service and this post was created '
+                            };
+                            var info2 = {
+                                type : 'newsPreview',
+                                title : '2.6 earthquake shakes near Concord',
+                                content : 'CONCORD (KRON) - A 2.6 magnitude earthquake has struck near Concord on Tuesday afternoon, according'
+                            };
+                            var info3 = {
+                                type : 'newsPreview',
+                                title : 'Death Toll From Indonesia Earthquake Passes 43',
+                                content : 'An earthquake expected in Istanbul may claim the lives of 26,000 to 30,000 people...'
+                            };
+
+                            newsList.push(info1);
+                            newsList.push(info2);
+                            newsList.push(info3);
+
+
+                            responseObj = {
+                                data : res,
+                                type : 'newsPreview',
+                                news : newsList,
+                                title : 'Earthquake: 4.4 quake strikes Inland',
+                                content : 'This information comes from the USGS Earthquake Notification Service and this post was created '
+                            };
+
+                            socket.emit('message', responseObj);
+                            responseObj.type = 'option'
+                        }
                     }
                 }
 
-
                 console.log(responseObj.data);
-
                 socket.emit('message', responseObj);
             }
         });
@@ -403,7 +436,7 @@ app.post('/closeShel', function (req, res) {
         }
         res.send(dataArr[num]);
     });
-   // console.log(req.body)
+    // console.log(req.body)
 });
 
 // 유저이미지 JSON 리스트로 뿌려줍니다
