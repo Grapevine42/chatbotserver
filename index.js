@@ -223,6 +223,7 @@ io.on('connection', function (socket) {
                                 type : 'newsPreview',
                                 news : newsList,
                                 title : 'Earthquake: 4.4 quake strikes Inland',
+                                option : optionList,
                                 content : 'This information comes from the USGS Earthquake Notification Service and this post was created '
                             };
 
